@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+
+# Virtual environments
+.venv/
+venv/
+
+# Data and storage (keep large files out of git)
+data/
+storage/faiss.index
+storage/*.index
+
+# Environment & editor
+.env
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db

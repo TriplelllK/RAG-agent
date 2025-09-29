@@ -1,0 +1,23 @@
+# Ignore virtual environments and caches
+.venv
+venv
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache
+.mypy_cache
+
+# VCS
+.git
+.gitignore
+
+# Large data / runtime files (mount these instead of copying into image)
+data
+storage/faiss.index
+storage/meta.json
+storage/*.index
+storage/*.json
+
+# Environment and secrets
+.env
