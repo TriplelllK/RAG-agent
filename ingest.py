@@ -7,11 +7,15 @@ import faiss
 import re
 
 STATE_FILE = "ingest_state.json"
+SUPPORTED_EXTS = {".pdf", ".txt", ".md"}
 
 DOC_MAP = {
     "avarii_i_signalizacii_u300.pdf": "Аварии и сигнализации У-300 КТЛ-1",
     "normy_tekh_rezhima_u300.pdf": "Нормы технологического режима У-300 КТЛ-1",
     "tekhnologicheskiy_reglament_u300.pdf": "Технологический регламент У-300 КТЛ-1",
+    "reglament_sample.txt": "Технологический регламент У-300 КТЛ-1 (sample)",
+    "norms_sample.txt": "Нормы технологического режима У-300 КТЛ-1 (sample)",
+    "alarms_sample.txt": "Аварии и сигнализации У-300 КТЛ-1 (sample)",
 }
 
 def chunk_text(text: str, chunk: int = 900, overlap: int = 150) -> List[str]:
@@ -45,10 +49,24 @@ def load_pdf(path: str, chunk: int = 900, overlap: int = 150) -> List[Dict]:
             })
     return chunks
 
-def _pdf_signatures(data_dir: str) -> Dict[str, Dict]:
+def load_text_file(path: str, chunk: int = 900, overlap: int = 150) -> List[Dict]:
+    base = os.path.basename(path)
+    with open(path, "r", encoding="utf-8") as f:
+        txt = f.read()
+    chunks = []
+    for part in chunk_text(txt, chunk=chunk, overlap=overlap):
+        chunks.append({
+            "doc_name": DOC_MAP.get(base, base),
+            "page": 1,
+            "text": part.strip()
+        })
+    return chunks
+
+def _file_signatures(data_dir: str) -> Dict[str, Dict]:
     signatures = {}
     for fname in sorted(os.listdir(data_dir)):
-        if not fname.lower().endswith('.pdf'):
+        ext = os.path.splitext(fname)[1].lower()
+        if ext not in SUPPORTED_EXTS:
             continue
         full = os.path.join(data_dir, fname)
         st = os.stat(full)
@@ -72,13 +90,13 @@ def _save_state(out_dir: str, state: Dict) -> None:
 def main(data_dir: str, out_dir: str, chunk: int, overlap: int, force: bool = False):
     os.makedirs(out_dir, exist_ok=True)
 
-    signatures = _pdf_signatures(data_dir)
+    signatures = _file_signatures(data_dir)
     prev = _load_state(out_dir)
     current_cfg = {
         "chunk": chunk,
         "overlap": overlap,
         "model": "sentence-transformers/all-MiniLM-L6-v2",
-        "pdfs": signatures,
+        "files": signatures,
     }
 
     idx_path = os.path.join(out_dir, 'faiss.index')
@@ -89,13 +107,17 @@ def main(data_dir: str, out_dir: str, chunk: int, overlap: int, force: bool = Fa
 
     all_chunks = []
     for fname in os.listdir(data_dir):
-        if not fname.lower().endswith('.pdf'):
+        ext = os.path.splitext(fname)[1].lower()
+        if ext not in SUPPORTED_EXTS:
             continue
         path = os.path.join(data_dir, fname)
-        all_chunks.extend(load_pdf(path, chunk=chunk, overlap=overlap))
+        if ext == ".pdf":
+            all_chunks.extend(load_pdf(path, chunk=chunk, overlap=overlap))
+        else:
+            all_chunks.extend(load_text_file(path, chunk=chunk, overlap=overlap))
 
     if not all_chunks:
-        print("No PDF chunks found")
+        print("No chunks found")
         return
 
     model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")

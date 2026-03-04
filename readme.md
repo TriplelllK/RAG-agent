@@ -47,8 +47,8 @@ RAG-агент для технической документации устан
 ## Что нужно для запуска
 
 - Python 3.10+
-- Файлы PDF в папке `data/`
-- OpenAI API ключ (или совместимый endpoint)
+- Публичный демо-корпус в `sample_data/`
+- OpenAI API ключ (опционально, только если нужен LLM-режим)
 
 ## Быстрый старт
 
@@ -59,6 +59,13 @@ pip install -r requirements.txt
 ```
 
 ```bash
+python ingest.py --data_dir sample_data --out_dir storage --force
+streamlit run app.py
+```
+
+Опционально (если нужен ответ через LLM, а не только retrieval):
+
+```bash
 # PowerShell
 $env:OPENAI_API_KEY="your_api_key"
 $env:OPENAI_MODEL="gpt-4o-mini"
@@ -66,15 +73,16 @@ $env:OPENAI_MODEL="gpt-4o-mini"
 # $env:OPENAI_BASE_URL="https://api.openai.com/v1"
 ```
 
-```bash
-python ingest.py --data_dir data --out_dir storage
-streamlit run app.py
-```
+В `sample_data/` уже есть три демонстрационных файла:
+
+- `reglament_sample.txt`
+- `norms_sample.txt`
+- `alarms_sample.txt`
 
 ## Основные файлы
 
 - `app.py` — интерфейс Streamlit
-- `ingest.py` — индексация PDF в FAISS
+- `ingest.py` — индексация документов (PDF/TXT/MD) в FAISS
 - `rag_core.py` — поиск, rerank, генерация ответа
 - `rag_structured.py` — работа с нормами и авариями
 - `eval/eval_rag.py` — оценка качества
@@ -82,11 +90,11 @@ streamlit run app.py
 ## Оценка качества
 
 ```bash
-# с LLM
-python eval/eval_rag.py --gold eval/gold_qa.jsonl --k 4
+# базовый публичный прогон без API-ключа
+python eval/eval_rag.py --gold eval/gold_qa_sample.jsonl --k 4 --no-llm
 
-# без LLM (если API недоступен)
-python eval/eval_rag.py --gold eval/gold_qa.jsonl --k 4 --no-llm
+# опционально: прогон с LLM на том же sample-наборе
+# python eval/eval_rag.py --gold eval/gold_qa_sample.jsonl --k 4
 ```
 
 Смотреть метрики:
@@ -108,22 +116,20 @@ python eval/eval_rag.py --gold eval/gold_qa.jsonl --k 4 --no-llm
 ### Быстрый запуск трекера
 
 ```bash
-# 1) Добавить ручной baseline (если нужно)
+# 1) Прогон sample-eval
+python eval/eval_rag.py --gold eval/gold_qa_sample.jsonl --k 4 --no-llm
+
+# 2) (опционально) добавить snapshot вручную в историю
 python eval/track_metrics.py add-manual \
-	--label "before-change" \
-	--notes "Базовый прогон" \
-	--config expanded_k4 \
-	--gold eval/gold_qa.jsonl \
-	--k 4 --no-llm --n 40 \
-	--recall 0.4 --mrr 0.4 --faithfulness 0.525 \
-	--citation-rate 1.0 --instrument-hit-rate 0.8889
+	--label "sample-baseline" \
+	--notes "Публичный sample corpus" \
+	--config sample_k4 \
+	--gold eval/gold_qa_sample.jsonl \
+	--k 4 --no-llm --n 6 \
+	--recall 1.0 --mrr 0.875 --faithfulness 0.5 \
+	--citation-rate 1.0 --instrument-hit-rate 0.0
 
-# 2) Снять текущий snapshot по дефолтным конфигам
-python eval/track_metrics.py run \
-	--label "after-change" \
-	--notes "Описание изменений"
-
-# 3) Пересобрать графики/таблицы из истории
+# 3) пересобрать графики/таблицы из истории
 python eval/track_metrics.py render
 ```
 
@@ -151,7 +157,21 @@ python eval/track_metrics.py render
 3. Добавил постоянный трекинг истории метрик и авто-графики.
 4. Для длинного текста добавил query-focused контекст, дедупликацию повторяющихся чанков, штраф boilerplate-фрагментов, keyword-scan по регламенту и deterministic extract path для вопроса о продуктах установки (точный список с цитатой).
 
-## Сравнение до/после
+## Метрики sample-профиля (публичный запуск)
+
+Последний публичный прогон без LLM:
+
+```bash
+python eval/eval_rag.py --gold eval/gold_qa_sample.jsonl --k 4 --no-llm
+```
+
+| Конфиг | N | Recall | MRR | Faithfulness | Citation rate | LLM errors |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| sample_k4 (public) | 6 | 1.00 | 0.875 | 0.50 | 1.00 | 0 |
+
+## Архив: метрики internal corpus (исторические)
+
+Ниже сохранены исторические результаты на закрытом внутреннем корпусе (не на `sample_data`).
 
 | Конфиг | Recall (до) | Recall (после) | MRR (до) | MRR (после) | Faithfulness (до) | Faithfulness (после) |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -159,7 +179,9 @@ python eval/track_metrics.py render
 | expanded_k8 (N=40) | 0.40 | 0.70 | 0.40 | 0.70 | 0.525 | 0.60 |
 | small_k4 (N=3) | 0.667 | 1.00 | 0.667 | 1.00 | 0.333 | 0.333 |
 
-## Последний прогон с LLM (включен)
+## Архив: последний прогон с LLM на internal corpus
+
+Этот раздел относится к закрытому внутреннему корпусу и приведён только как история развития качества.
 
 После настройки ключа и проверки LLM-конфига был выполнен полный прогон с включенной генерацией (не `--no-llm`).
 
@@ -239,7 +261,9 @@ python eval/track_metrics.py render
 - Без общего текста без деталей.
 - Ссылки на соответствующие источники.
 
-### Реальные ответы LLM (фактический прогон)
+### Архив: реальные ответы LLM (internal corpus)
+
+Ниже примеры из исторического прогона на закрытых документах, не относящиеся к публичному `sample`-профилю.
 
 Ниже примеры фактических ответов (`gpt-4o-mini`) из `eval/reports/llm_real_examples.json`.
 
