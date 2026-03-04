@@ -1,0 +1,9 @@
+timestamp,label,notes,git_sha,config,gold,k,no_llm,N,recall,mrr,faithfulness,citation_rate,instrument_hit_rate,llm_errors
+2026-03-04T17:11:35,before-structured-lookup-fix,Исторический baseline из прогона до исправления structured lookup,,small_k4,eval/gold_qa_small.jsonl,4,True,3,0.6666666667,0.6666666667,0.3333333333,1.0,1.0,0
+2026-03-04T17:11:40,before-structured-lookup-fix,Исторический baseline из прогона до исправления structured lookup,,expanded_k4,eval/gold_qa.jsonl,4,True,40,0.4,0.4,0.525,1.0,0.8888888889,0
+2026-03-04T17:11:43,before-structured-lookup-fix,Исторический baseline из прогона до исправления structured lookup,,expanded_k8,eval/gold_qa.jsonl,8,True,40,0.4,0.4,0.525,1.0,0.8888888889,0
+2026-03-04T17:11:46,after-structured-lookup-fix,Исправлен find_norm_by_instrument; добавлены улучшения rerank/doc diversity,692965d,small_k4,eval/gold_qa_small.jsonl,4,True,3,1.0,1.0,0.3333333333333333,1.0,1.0,0
+2026-03-04T17:11:46,after-structured-lookup-fix,Исправлен find_norm_by_instrument; добавлены улучшения rerank/doc diversity,692965d,expanded_k4,eval/gold_qa.jsonl,4,True,40,0.7,0.7,0.6,1.0,1.0,0
+2026-03-04T17:11:46,after-structured-lookup-fix,Исправлен find_norm_by_instrument; добавлены улучшения rerank/doc diversity,692965d,expanded_k8,eval/gold_qa.jsonl,8,True,40,0.7,0.7,0.6,1.0,1.0,0
+2026-03-04T17:44:16,llm-enabled-eval,Полный прогон с включенным LLM после настройки ключа,,expanded_k4,eval/gold_qa.jsonl,4,False,40,0.7,0.7,0.6,1.0,1.0,0
+2026-03-04T17:44:19,llm-enabled-eval,Полный прогон с включенным LLM после настройки ключа,,expanded_k8,eval/gold_qa.jsonl,8,False,40,0.7,0.7,0.6,1.0,1.0,0

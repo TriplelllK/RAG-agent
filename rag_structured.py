@@ -1,6 +1,7 @@
 import json, os
 from typing import List
 from dataclasses import dataclass
+import re
 
 @dataclass
 class Norm:
@@ -35,7 +36,7 @@ def load_alarms(path="storage/alarms.json") -> List[Alarm]:
     data = json.load(open(path, "r", encoding="utf-8"))
     return [Alarm(**r) for r in data]
 
-# --- поиск по оборудованию ---
+# Поиск по оборудованию
 def norms_by_equipment(norms: List[Norm], equipment: str) -> List[Norm]:
     eq = (equipment or "").upper()
     return [n for n in norms if n.equipment.upper()==eq]
@@ -44,16 +45,19 @@ def alarms_by_equipment(alarms: List[Alarm], equipment: str) -> List[Alarm]:
     eq = (equipment or "").upper()
     return [a for a in alarms if a.equipment.upper()==eq]
 
-# --- поиск по приборам ---
+# Поиск по приборам
+def _norm_tag(value: str) -> str:
+    return re.sub(r"[^A-Z0-9_]", "", (value or "").upper())
+
 def find_norm_by_instrument(norms: List[Norm], instrument: str) -> List[Norm]:
-    inst = (instrument or "").upper().strip()
-    return [n for n in norms if n.instrument.upper() == inst]
+    inst = _norm_tag(instrument)
+    return [n for n in norms if _norm_tag(n.param) == inst]
 
 def find_alarm_by_instrument(alarms: List[Alarm], instrument: str) -> List[Alarm]:
-    inst = (instrument or "").upper().strip()
-    return [a for a in alarms if a.instrument.upper() == inst]
+    inst = _norm_tag(instrument)
+    return [a for a in alarms if _norm_tag(a.instrument) == inst]
 
-# --- форматирование ---
+# Форматирование
 def format_norm_line(n: Norm) -> str:
     parts = []
     head = f"{n.instrument}: {n.param}".strip(": ")

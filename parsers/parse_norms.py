@@ -20,37 +20,63 @@ def _maybe_equipment(text: str) -> Optional[str]:
         return text.replace(" ", "").replace("–", "-")
     return None
 
-def parse_norm_row(cells: List[str], equip_hint: str, page_num: int) -> Optional[Norm]:
-    if not cells or len(cells) < 4:
+def _is_instrument(value: str) -> bool:
+    if not value:
+        return False
+    return bool(re.match(r"^(?:[A-Z]{2,5}-?\d{3,6}(?:_\d+)?)$", value.strip().upper()))
+
+def _is_number_like(value: str) -> bool:
+    if not value:
+        return False
+    value = value.strip().replace(",", ".")
+    return bool(re.match(r"^-?\d+(?:\.\d+)?$", value))
+
+def _to_float(value: str) -> Optional[float]:
+    try:
+        return float(value.replace(",", "."))
+    except Exception:
         return None
 
-    instr = cells[0].strip()
-    param = cells[1].strip() if len(cells) > 1 else ""
-    unit  = cells[2].strip() if len(cells) > 2 else ""
+def parse_norm_row(cells: List[str], equip_hint: str, page_num: int) -> Optional[Norm]:
+    cells = [c.strip() for c in cells if c and c.strip()]
+    if not cells:
+        return None
+
+    instr_idx = -1
+    for idx, cell in enumerate(cells):
+        if _is_instrument(cell):
+            instr_idx = idx
+            break
+    if instr_idx == -1:
+        instr_idx = 0
+
+    instr = cells[instr_idx].strip()
+    if not _is_instrument(instr):
+        return None
+
+    tail = cells[instr_idx + 1:]
+    text_tail = [x for x in tail if not _is_number_like(x)]
+    param = text_tail[0].strip() if text_tail else ""
+    unit = text_tail[1].strip() if len(text_tail) > 1 else ""
 
     if not instr or not param:
         return None
 
-    # допустимые диапазоны
+    # Читаем диапазоны.
     range_min = None
     range_max = None
     work_min  = None
     work_max  = None
 
-    def _to_float(x: str) -> Optional[float]:
-        try:
-            return float(x.replace(",", "."))
-        except:
-            return None
-
-    if len(cells) > 3 and cells[3] not in ["", "-", "—"]:
-        range_min = _to_float(cells[3])
-    if len(cells) > 4 and cells[4] not in ["", "-", "—"]:
-        range_max = _to_float(cells[4])
-    if len(cells) > 5 and cells[5] not in ["", "-", "—"]:
-        work_min  = _to_float(cells[5])
-    if len(cells) > 6 and cells[6] not in ["", "-", "—"]:
-        work_max  = _to_float(cells[6])
+    num_tail = [x for x in tail if _is_number_like(x)]
+    if len(num_tail) >= 1:
+        range_min = _to_float(num_tail[0])
+    if len(num_tail) >= 2:
+        range_max = _to_float(num_tail[1])
+    if len(num_tail) >= 3:
+        work_min = _to_float(num_tail[2])
+    if len(num_tail) >= 4:
+        work_max = _to_float(num_tail[3])
 
     return Norm(
         equipment=equip_hint or "",
@@ -67,28 +93,35 @@ def parse_norm_row(cells: List[str], equip_hint: str, page_num: int) -> Optional
 def parse_norms(pdf_path: str) -> List[Norm]:
     norms = []
     equip_hint = None
+    skipped_rows = 0
     with pdfplumber.open(pdf_path) as pdf:
         for page_num, page in enumerate(pdf.pages, start=1):
             try:
-                table = page.extract_table()
-            except:
-                table = None
-            if not table:
+                tables = page.extract_tables() or []
+            except Exception:
+                tables = []
+
+            if not tables:
                 continue
 
-            for row in table:
-                if not row:
-                    continue
-                cells = [c.strip() if c else "" for c in row]
+            for table in tables:
+                for row in table:
+                    if not row:
+                        continue
+                    cells = [c.strip() if c else "" for c in row]
 
-                eq = _maybe_equipment(" ".join(cells))
-                if eq:
-                    equip_hint = eq
-                    continue
+                    eq = _maybe_equipment(" ".join(cells))
+                    if eq:
+                        equip_hint = eq
+                        continue
 
-                norm = parse_norm_row(cells, equip_hint, page_num)
-                if norm:
-                    norms.append(norm)
+                    norm = parse_norm_row(cells, equip_hint, page_num)
+                    if norm:
+                        norms.append(norm)
+                    else:
+                        skipped_rows += 1
+
+    print(f"Skipped rows: {skipped_rows}")
     return norms
 
 if __name__ == "__main__":
@@ -99,4 +132,4 @@ if __name__ == "__main__":
 
     data = [n.__dict__ for n in parse_norms(args.pdf)]
     json.dump(data, open(args.out, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
-    print(f"Parsed {len(data)} rows → {args.out}")
+    print(f"Parsed rows: {len(data)}")

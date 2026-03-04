@@ -45,7 +45,7 @@ def build_kv(data_dir: str, out_path: str):
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(kv, f, ensure_ascii=False)
-    print(f"Saved {len(kv)} tags → {out_path}")
+    print(f"Saved tags: {len(kv)}")
 
 if __name__ == "__main__":
     import argparse

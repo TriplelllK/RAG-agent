@@ -14,7 +14,13 @@ storage/*.index
 
 # Environment & editor
 .env
+.env.*
+!.env.example
+openai_api_key.txt
 .vscode/
+
+# Logs
+*.log
 
 # OS
 .DS_Store
