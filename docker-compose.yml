@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   rag-u300-ktl1:
     build: .

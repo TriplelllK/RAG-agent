@@ -7,10 +7,12 @@ __pycache__/
 .venv/
 venv/
 
-# Data and storage (keep large files out of git)
+# Data and storage
 data/
 storage/faiss.index
 storage/*.index
+storage/ingest_state.json
+eval/reports/
 
 # Environment & editor
 .env
@@ -18,9 +20,13 @@ storage/*.index
 !.env.example
 openai_api_key.txt
 .vscode/
+.idea/
 
 # Logs
 *.log
+
+# Large/binary
+*.pptx
 
 # OS
 .DS_Store
