@@ -75,7 +75,8 @@ class Chunk:
     text: str
 
 class VectorStore:
-    def __init__(self, index_path: str, meta_path: str, model_name: str = "sentence-transformers/all-MiniLM-L6-v2"):
+    def __init__(self, index_path: str, meta_path: str, model_name: str | None = None):
+        model_name = model_name or os.environ.get("EMB_MODEL", "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
         self.model = SentenceTransformer(model_name)
         self.index = faiss.read_index(index_path)
         with open(meta_path, 'r', encoding='utf-8') as f:

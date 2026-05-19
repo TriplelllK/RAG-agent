@@ -8,6 +8,7 @@ import re
 
 STATE_FILE = "ingest_state.json"
 SUPPORTED_EXTS = {".pdf", ".txt", ".md"}
+EMB_MODEL = os.environ.get("EMB_MODEL", "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
 
 DOC_MAP = {
     "avarii_i_signalizacii_u300.pdf": "Аварии и сигнализации У-300 КТЛ-1",
@@ -95,7 +96,7 @@ def main(data_dir: str, out_dir: str, chunk: int, overlap: int, force: bool = Fa
     current_cfg = {
         "chunk": chunk,
         "overlap": overlap,
-        "model": "sentence-transformers/all-MiniLM-L6-v2",
+        "model": EMB_MODEL,
         "files": signatures,
     }
 
@@ -120,7 +121,7 @@ def main(data_dir: str, out_dir: str, chunk: int, overlap: int, force: bool = Fa
         print("No chunks found")
         return
 
-    model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+    model = SentenceTransformer(EMB_MODEL)
     texts = [c["text"] for c in all_chunks]
     embs = model.encode(texts, normalize_embeddings=True, batch_size=64)
     embs = np.asarray(embs, dtype='float32')
