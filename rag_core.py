@@ -551,67 +551,6 @@ def _fallback_answer(query: str, ctx: List[Chunk]) -> Dict:
         "citations": citations
     }
 
-def _try_answer_products_question(query: str) -> Dict | None:
-    q = (query or "").lower()
-    if "продукт" not in q or "установ" not in q:
-        return None
-
-    meta_path = os.path.join(os.path.dirname(__file__), "storage", "meta.json")
-    if not os.path.exists(meta_path):
-        return None
-
-    try:
-        meta = json.load(open(meta_path, "r", encoding="utf-8"))
-    except Exception:
-        return None
-
-    candidates = []
-    for row in meta:
-        doc = (row.get("doc_name") or "")
-        if "регламент" not in doc.lower():
-            continue
-        txt = (row.get("text") or "")
-        low = txt.lower()
-        if "продуктами установки 300" in low or "продуктами установки" in low:
-            candidates.append(row)
-
-    if not candidates:
-        return None
-
-    best = candidates[0]
-    text = (best.get("text") or "")
-    lines = [x.strip(" •;\t") for x in re.split(r"\n+", text) if x.strip()]
-
-    products = []
-    for ln in lines:
-        l = ln.lower()
-        if any(k in l for k in ["очищенный газ", "кислый газ", "конденсат", "установку 700", "установку 200", "у-400"]):
-            products.append(ln.rstrip(".;"))
-
-    # Если не удалось выделить маркеры, используем блок после двоеточия.
-    if not products and ":" in text:
-        tail = text.split(":", 1)[1]
-        parts = [p.strip(" •;\n\t") for p in re.split(r"[\n;]+", tail) if p.strip()]
-        for p in parts[:8]:
-            if len(p) > 6:
-                products.append(p.rstrip("."))
-
-    if not products:
-        return None
-
-    answer_lines = ["Краткий вывод:", "Продуктами установки 300 являются:"]
-    for p in products[:6]:
-        answer_lines.append(f"- {p}")
-    answer_lines.append("")
-    answer_lines.append("Цитата: данные взяты из технологического регламента.")
-
-    citation = {
-        "doc_name": best.get("doc_name", "Технологический регламент У-300 КТЛ-1.pdf"),
-        "page": int(best.get("page") or 1),
-        "snippet": _get_snippet(text, max_len=350)
-    }
-    return {"answer": "\n".join(answer_lines), "citations": [citation]}
-
 def make_answer_llm(query: str, ctx: List[Chunk], model: str = DEFAULT_LLM_MODEL, retrieval_score: float | None = None) -> Dict:
     cfg_ok, cfg_msg = validate_llm_config()
     if not cfg_ok:
@@ -622,10 +561,6 @@ def make_answer_llm(query: str, ctx: List[Chunk], model: str = DEFAULT_LLM_MODEL
 
     if not ctx:
         return _fallback_answer(query, ctx)
-
-    extracted = _try_answer_products_question(query)
-    if extracted is not None:
-        return extracted
 
     # 1) Контекст из вектора
     context_blocks = [ f"{ch.doc_name}, стр. {ch.page}: {_query_focused_snippet(ch.text, query)}" for ch in ctx ]
