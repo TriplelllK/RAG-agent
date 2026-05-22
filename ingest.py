@@ -20,7 +20,6 @@ DOC_MAP = {
 }
 
 def chunk_text(text: str, chunk: int = 900, overlap: int = 150) -> List[str]:
-    # Сначала делим по абзацам, потом режем длинные куски.
     paragraphs = re.split(r"\n\s*\n", text)
     out = []
     for p in paragraphs:
@@ -103,7 +102,7 @@ def main(data_dir: str, out_dir: str, chunk: int, overlap: int, force: bool = Fa
     idx_path = os.path.join(out_dir, 'faiss.index')
     meta_path = os.path.join(out_dir, 'meta.json')
     if (not force) and os.path.exists(idx_path) and os.path.exists(meta_path) and prev == current_cfg:
-        print("Index is up to date")
+        print("Индекс уже актуален")
         return
 
     all_chunks = []
@@ -118,7 +117,7 @@ def main(data_dir: str, out_dir: str, chunk: int, overlap: int, force: bool = Fa
             all_chunks.extend(load_text_file(path, chunk=chunk, overlap=overlap))
 
     if not all_chunks:
-        print("No chunks found")
+        print("Не нашёл документов для индексации")
         return
 
     model = SentenceTransformer(EMB_MODEL)
@@ -131,7 +130,7 @@ def main(data_dir: str, out_dir: str, chunk: int, overlap: int, force: bool = Fa
     with open(meta_path, 'w', encoding='utf-8') as f:
         json.dump(all_chunks, f, ensure_ascii=False)
     _save_state(out_dir, current_cfg)
-    print(f"Indexed chunks: {len(all_chunks)}")
+    print(f"Проиндексировано фрагментов: {len(all_chunks)}")
 
 if __name__ == '__main__':
     ap = argparse.ArgumentParser()

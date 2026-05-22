@@ -36,41 +36,43 @@ def load_alarms(path="storage/alarms.json") -> List[Alarm]:
     data = json.load(open(path, "r", encoding="utf-8"))
     return [Alarm(**r) for r in data]
 
-# Поиск по оборудованию
 def norms_by_equipment(norms: List[Norm], equipment: str) -> List[Norm]:
     eq = (equipment or "").upper()
-    return [n for n in norms if n.equipment.upper()==eq]
+    return [n for n in norms if n.equipment.upper() == eq]
+
 
 def alarms_by_equipment(alarms: List[Alarm], equipment: str) -> List[Alarm]:
     eq = (equipment or "").upper()
-    return [a for a in alarms if a.equipment.upper()==eq]
+    return [a for a in alarms if a.equipment.upper() == eq]
 
-# Поиск по приборам
+
 def _norm_tag(value: str) -> str:
     return re.sub(r"[^A-Z0-9_]", "", (value or "").upper())
+
 
 def find_norm_by_instrument(norms: List[Norm], instrument: str) -> List[Norm]:
     inst = _norm_tag(instrument)
     return [n for n in norms if _norm_tag(n.param) == inst]
 
+
 def find_alarm_by_instrument(alarms: List[Alarm], instrument: str) -> List[Alarm]:
     inst = _norm_tag(instrument)
     return [a for a in alarms if _norm_tag(a.instrument) == inst]
 
-# Форматирование
+
 def format_norm_line(n: Norm) -> str:
-    parts = []
     head = f"{n.instrument}: {n.param}".strip(": ")
-    if n.unit: head += f" ({n.unit})"
-    parts.append(head)
+    if n.unit:
+        head += f" ({n.unit})"
+    parts = [head]
     rng = []
     if n.range_min is not None or n.range_max is not None:
-        rng.append(f"допустимый диапазон: {n.range_min}–{n.range_max}")
+        rng.append(f"допустимый диапазон: {n.range_min}-{n.range_max}")
     if n.work_min is not None or n.work_max is not None:
-        rng.append(f"рабочий диапазон: {n.work_min}–{n.work_max}")
+        rng.append(f"рабочий диапазон: {n.work_min}-{n.work_max}")
     if rng:
-        parts.append("  ▸ " + "; ".join(rng))
-    parts.append(f"  ▸ стр. {n.page}")
+        parts.append("  - " + "; ".join(rng))
+    parts.append(f"  - стр. {n.page}")
     return "\n".join(parts)
 
 def format_alarm_line(a: Alarm) -> str:

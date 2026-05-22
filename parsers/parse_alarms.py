@@ -35,7 +35,6 @@ def _is_setpoint_like(value: str) -> bool:
     return bool(re.match(r"^[\d\s,\.\-+/<>=%]+$", v))
 
 def parse_alarm_row(cells: List[str], equip_hint: str, page_num: int) -> Optional[Alarm]:
-    # Разбираем одну строку таблицы аварий.
     cells = [c.strip() for c in cells if c and c.strip()]
     if not cells:
         return None
@@ -56,21 +55,18 @@ def parse_alarm_row(cells: List[str], equip_hint: str, page_num: int) -> Optiona
     if not instr or not param:
         return None
 
-    # Ищем уставку рядом с единицами.
     setpoint = None
     for c in tail[:6]:
         if _is_setpoint_like(c):
             setpoint = c.strip()
             break
 
-    # Ищем действие ближе к концу строки.
     action = ""
     for c in reversed(tail):
         if any(word in c for word in ["Закрытие", "Открытие", "Пуск", "Остановка", "Перевод"]):
             action = c.strip()
             break
 
-    # Берем примечание, если оно есть.
     note = ""
     if tail and tail[-1] not in ["", "-", "—"]:
         note = tail[-1].strip()
@@ -106,7 +102,6 @@ def parse_alarms(pdf_path: str) -> List[Alarm]:
                         continue
                     cells = [c.strip() if c else "" for c in row]
 
-                    # Обновляем текущее оборудование.
                     eq = _maybe_equipment(" ".join(cells))
                     if eq:
                         equip_hint = eq
@@ -118,7 +113,7 @@ def parse_alarms(pdf_path: str) -> List[Alarm]:
                     else:
                         skipped_rows += 1
 
-    print(f"Skipped rows: {skipped_rows}")
+    print(f"Пропущено строк: {skipped_rows}")
     return alarms
 
 if __name__ == "__main__":
@@ -129,4 +124,4 @@ if __name__ == "__main__":
 
     data = [a.__dict__ for a in parse_alarms(args.pdf)]
     json.dump(data, open(args.out, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
-    print(f"Parsed rows: {len(data)}")
+    print(f"Распознано строк: {len(data)}")

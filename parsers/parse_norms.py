@@ -62,7 +62,6 @@ def parse_norm_row(cells: List[str], equip_hint: str, page_num: int) -> Optional
     if not instr or not param:
         return None
 
-    # Читаем диапазоны.
     range_min = None
     range_max = None
     work_min  = None
@@ -121,7 +120,7 @@ def parse_norms(pdf_path: str) -> List[Norm]:
                     else:
                         skipped_rows += 1
 
-    print(f"Skipped rows: {skipped_rows}")
+    print(f"Пропущено строк: {skipped_rows}")
     return norms
 
 if __name__ == "__main__":
@@ -132,4 +131,4 @@ if __name__ == "__main__":
 
     data = [n.__dict__ for n in parse_norms(args.pdf)]
     json.dump(data, open(args.out, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
-    print(f"Parsed rows: {len(data)}")
+    print(f"Распознано строк: {len(data)}")
