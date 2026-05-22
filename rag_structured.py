@@ -27,13 +27,17 @@ class Alarm:
     page: int
 
 def load_norms(path="storage/norms.json") -> List[Norm]:
-    if not os.path.exists(path): return []
-    data = json.load(open(path, "r", encoding="utf-8"))
+    if not os.path.exists(path):
+        return []
+    with open(path, "r", encoding="utf-8") as f:
+        data = json.load(f)
     return [Norm(**r) for r in data]
 
 def load_alarms(path="storage/alarms.json") -> List[Alarm]:
-    if not os.path.exists(path): return []
-    data = json.load(open(path, "r", encoding="utf-8"))
+    if not os.path.exists(path):
+        return []
+    with open(path, "r", encoding="utf-8") as f:
+        data = json.load(f)
     return [Alarm(**r) for r in data]
 
 def norms_by_equipment(norms: List[Norm], equipment: str) -> List[Norm]:

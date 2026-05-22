@@ -123,5 +123,6 @@ if __name__ == "__main__":
     args = ap.parse_args()
 
     data = [a.__dict__ for a in parse_alarms(args.pdf)]
-    json.dump(data, open(args.out, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+    with open(args.out, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
     print(f"Распознано строк: {len(data)}")
