@@ -97,7 +97,7 @@ def _query_terms(query: str) -> List[str]:
     return [t for t in _tokenize(query) if len(t) >= 3 and t not in STOPWORDS]
 
 
-def _lex_bm25(query: str, text: str) -> float:
+def _tf_score(query: str, text: str) -> float:
     q_tokens = _tokenize(query)
     d_tokens = _tokenize(text)
     if not q_tokens or not d_tokens:
@@ -257,7 +257,7 @@ def rerank(query: str, items: List[Tuple[Chunk, float]], top_k: int = 4) -> List
         return []
     vec = _normalize_scores([s for _, s in items])
     lex = _normalize_scores([fuzz.token_set_ratio(query, ch.text) / 100.0 for ch, _ in items])
-    bm25 = _normalize_scores([_lex_bm25(query, ch.text) for ch, _ in items])
+    bm25 = _normalize_scores([_tf_score(query, ch.text) for ch, _ in items])
     scored: List[Tuple[Chunk, float]] = []
     for i, (ch, _) in enumerate(items):
         s = 0.45 * vec[i] + 0.35 * lex[i] + 0.20 * bm25[i]
