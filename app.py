@@ -1,9 +1,9 @@
 import streamlit as st
 import os
 from rag_core import VectorStore, rerank, make_answer_llm, DEFAULT_LLM_MODEL, validate_llm_config
-from prompts import CITATION_FMT
 
 DEFAULT_MODEL = DEFAULT_LLM_MODEL
+CITATION_FMT = "- {doc_name}, стр. {page}: {snippet}"
 
 st.set_page_config(page_title="RAG У-300", layout="wide")
 st.title("RAG по У-300")
